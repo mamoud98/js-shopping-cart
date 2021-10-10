@@ -16,53 +16,10 @@ function row(item) {
                                     <p class="card-text"><small class=" text-success fs-2 ">${item.price} $</small></p>
                                     <button type="button" onclick="add(${item.id},${item.price})" class="btn btn-outline-primary" data-id="${item.id}">Add to Card</button>
                                     </div>
-                                  
                                 </div>
                             </div>
                         </div>
                     </div>`;
-}
-//
-function tableCard(item) {
-  let table = document.querySelector("table tbody");
-
-  table.innerHTML += `<tr>
-    <th > product x${item.id}</th>
-    <td>${item.price * item.count} $</td>
-    <td>${item.count} </td>
-    <td style="color:red; cursor: pointer;" onclick="remove(${item.id})">X</td>
-</tr>`;
-}
-//
-var TotalOfPrice = function () {
-  const dataLocal = localStorage.getItem("cart");
-  const newData = JSON.parse(dataLocal);
-
-  if (newData !== null) {
-    var total = newData
-      .map((data) => {
-        return data.price * data.count;
-      })
-      .reduce((previousValue, currentValue) => {
-        return previousValue + currentValue;
-      });
-    return total;
-  } else {
-    return 0;
-  }
-};
-
-console.log(TotalOfPrice());
-//
-function totalCred() {
-  let table = document.querySelector("table tbody");
-
-  table.innerHTML += `<tr>
-    <th > Total</th>
-    <td>${TotalOfPrice()} $</td>
-    <td></td>
-    <td></td>
-</tr>`;
 }
 //
 Product.list().then((response) => {
@@ -73,70 +30,111 @@ Product.list().then((response) => {
   }
 });
 //
-function listCart() {
-  const dataLocal = localStorage.getItem("cart");
-  const newData = JSON.parse(dataLocal);
-  console.log(newData);
-  if (newData !== null) {
-    for (const element of newData) {
-      tableCard(element);
-    }
-  }
-  totalCred();
+
+let arrayOfProduct = [];
+
+// Check if Theres Tasks In Local Storage
+if (localStorage.getItem("cart")) {
+  arrayOfProduct = JSON.parse(localStorage.getItem("cart"));
 }
-listCart();
+
+// Trigger Get Data From Local Storage Function
+getDataFromLocalStorage();
+
+function tableCard(item) {
+  let table = document.querySelector("table tbody");
+  table.innerHTML += `<tr>
+    <th > product x${item.id}</th>
+    <td>${item.price * item.count} $</td>
+    <td>${item.count} </td>
+    <td style="color:red; cursor: pointer;" onclick="remove(${item.id})">X</td>
+</tr>`;
+}
+//
+function TotalOfPrice() {
+  var total = arrayOfProduct
+    .map((data) => {
+      return data.price * data.count;
+    })
+    .reduce((previousValue, currentValue) => {
+      return previousValue + currentValue;
+    }, 0);
+  if (total) {
+    return total;
+  }
+  return 0;
+}
+
+//
+function totalCred() {
+  let table = document.querySelector("table tbody");
+  table.innerHTML += `<tr>
+    <th > Total</th>
+    <td>${TotalOfPrice()} $</td>
+    <td></td>
+    <td></td>
+</tr>`;
+}
 //
 
 window.remove = function (id) {
-  const dataLocal = localStorage.getItem("cart");
-  const newData = JSON.parse(dataLocal);
-  const afterDelete = newData.filter((data) => {
-    return data.id !== id;
-  });
-  let jsonStr = JSON.stringify(afterDelete);
-  localStorage.setItem("cart", jsonStr);
-  location.reload();
+  arrayOfProduct = arrayOfProduct.filter((task) => task.id !== id);
+  addDataToLocalStorageFrom(arrayOfProduct);
+  addElementsToPageFrom(arrayOfProduct);
 };
 //
 window.add = function (id, price) {
-  let localData = localStorage.getItem("cart");
-
-  var cart = {
+  // Task Data
+  const product = {
     id,
     price,
     count: 1,
   };
-  if (JSON.parse(localData) === null) {
-    let array = [cart];
-    let jsonStr = JSON.stringify(array);
-    localStorage.setItem("cart", jsonStr);
-    location.reload();
-  } else {
-    for (data of JSON.parse(localData)) {
-      if (data.id === id) {
-        var incPrice = {
-          id: data.id,
-          price: data.price,
-          count: data.count + 1,
-        };
-        let newDD = JSON.parse(localData).filter((dataa) => {
-          return dataa.id !== id;
-        });
-        console.log(newDD);
-        let array = [].concat(newDD);
-        array.push(incPrice);
-        let jsonStr = JSON.stringify(array);
-        localStorage.setItem("cart", jsonStr);
-        location.reload();
-        return;
-      }
-    }
 
-    let array = [].concat(JSON.parse(localData));
-    array.push(cart);
-    let jsonStr = JSON.stringify(array);
-    localStorage.setItem("cart", jsonStr);
-    location.reload();
+  for (let i = 0; i < arrayOfProduct.length; i++) {
+    if (arrayOfProduct[i].id == id) {
+      incTheCounter(id);
+      addElementsToPageFrom(arrayOfProduct);
+      return;
+    }
   }
+
+  arrayOfProduct.push(product);
+  // Add Tasks To Page
+  addElementsToPageFrom(arrayOfProduct);
+  // Add Tasks To Local Storage
+  addDataToLocalStorageFrom(arrayOfProduct);
 };
 //
+
+function addElementsToPageFrom(arrayOfProduct) {
+  let table = document.querySelector("table tbody");
+  // Empty Tasks Div
+  table.innerHTML = "";
+  // Looping On Array Of Tasks
+  arrayOfProduct.forEach((task) => {
+    tableCard(task);
+  });
+  totalCred();
+}
+
+function addDataToLocalStorageFrom(arrayOfProduct) {
+  window.localStorage.setItem("cart", JSON.stringify(arrayOfProduct));
+}
+
+function getDataFromLocalStorage() {
+  let data = window.localStorage.getItem("cart");
+  if (data) {
+    let tasks = JSON.parse(data);
+    addElementsToPageFrom(tasks);
+  }
+}
+//
+function incTheCounter(taskId) {
+  for (let i = 0; i < arrayOfProduct.length; i++) {
+    if (arrayOfProduct[i].id == taskId) {
+      arrayOfProduct[i].count += 1;
+    }
+  }
+  addDataToLocalStorageFrom(arrayOfProduct);
+}
